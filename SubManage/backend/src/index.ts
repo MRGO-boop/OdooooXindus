@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import db, { initializeDatabase } from './config/database';
 import { passwordService } from './services/PasswordService';
 import { AuthService } from './services/AuthService';
+import { authController } from './controllers/auth.controller';
 
 // Load environment variables
 dotenv.config();
@@ -38,6 +39,9 @@ app.get('/db-test', (req, res) => {
     res.status(500).json({ status: 'error', message: 'Database connection failed', error });
   }
 });
+
+// API Routes
+app.use('/api/auth', authController.router);
 
 // Start server
 app.listen(PORT, () => {
