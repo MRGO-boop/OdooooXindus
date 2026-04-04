@@ -5,6 +5,7 @@ import db, { initializeDatabase } from './config/database';
 import { passwordService } from './services/PasswordService';
 import { AuthService } from './services/AuthService';
 import { authController } from './controllers/auth.controller';
+import { jwtAuthGuard } from './middleware/auth.middleware';
 
 // Load environment variables
 dotenv.config();
@@ -42,6 +43,16 @@ app.get('/db-test', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authController.router);
+
+// Example protected route using JWT authentication guard
+app.get('/api/profile', jwtAuthGuard(), (req, res) => {
+  // req.user is now available with authenticated user info
+  res.json({
+    success: true,
+    message: 'Profile accessed successfully',
+    user: req.user,
+  });
+});
 
 // Start server
 app.listen(PORT, () => {
