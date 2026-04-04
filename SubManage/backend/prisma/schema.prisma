@@ -1,0 +1,218 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Models
+model User {
+  id                      String                    @id @default(cuid())
+  email                   String                    @unique
+  password                String
+  role                    String                    @default("Portal_User") // Admin, Internal_User, Portal_User
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  
+  // Relationships
+  subscriptions           Subscription[]
+  emailVerificationTokens EmailVerificationToken[]
+  
+  @@index([email])
+}
+
+model EmailVerificationToken {
+  id        String                 @id @default(cuid())
+  token     String                 @unique
+  type      String                 // PasswordReset, EmailVerification
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime               @default(now())
+  
+  // Relationships
+  user      User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([token])
+  @@index([userId])
+}
+
+model Product {
+  id          String           @id @default(cuid())
+  name        String
+  type        String
+  salesPrice  Float
+  costPrice   Float
+  isRecurring Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  
+  // Relationships
+  variants    ProductVariant[]
+  orderLines  OrderLine[]
+  discounts   Discount[]
+  
+  @@index([name])
+}
+
+model ProductVariant {
+  id         String     @id @default(cuid())
+  productId  String
+  attributes String     // JSON string storing variant attributes
+  extraPrice Float      @default(0)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  
+  // Relationships
+  product    Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderLines OrderLine[]
+  
+  @@index([productId])
+}
+
+model RecurringPlan {
+  id            String         @id @default(cuid())
+  name          String
+  billingPeriod String         // Daily, Weekly, Monthly, Yearly
+  autoClose     Boolean        @default(false)
+  closable      Boolean        @default(true)
+  pausable      Boolean        @default(false)
+  renewable     Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  // Relationships
+  subscriptions Subscription[]
+  
+  @@index([name])
+}
+
+model Subscription {
+  id              String             @id @default(cuid())
+  userId          String
+  recurringPlanId String?
+  status          String             @default("Draft") // Draft, Quotation, Confirmed, Active, Closed
+  startDate       DateTime?
+  endDate         DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  
+  // Relationships
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recurringPlan   RecurringPlan?     @relation(fields: [recurringPlanId], references: [id], onDelete: SetNull)
+  orderLines      OrderLine[]
+  invoices        Invoice[]
+  discounts       Discount[]
+  
+  @@index([userId])
+  @@index([status])
+  @@index([recurringPlanId])
+}
+
+model OrderLine {
+  id               String          @id @default(cuid())
+  subscriptionId   String?
+  invoiceId        String?
+  productId        String
+  productVariantId String?
+  quantity         Int
+  unitPrice        Float
+  amount           Float
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  
+  // Relationships
+  subscription     Subscription?   @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  invoice          Invoice?        @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product          Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productVariant   ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: SetNull)
+  taxes            Tax[]
+  
+  @@index([subscriptionId])
+  @@index([invoiceId])
+  @@index([productId])
+}
+
+model Invoice {
+  id             String        @id @default(cuid())
+  subscriptionId String
+  status         String        @default("Draft") // Draft, Confirmed, Paid
+  customerEmail  String
+  subtotal       Float
+  taxAmount      Float
+  total          Float
+  dueDate        DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  
+  // Relationships
+  subscription   Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  orderLines     OrderLine[]
+  payments       Payment[]
+  
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([customerEmail])
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  invoiceId     String
+  paymentMethod String
+  amount        Float
+  paymentDate   DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relationships
+  invoice       Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  
+  @@index([invoiceId])
+  @@index([paymentDate])
+}
+
+model Discount {
+  id             String       @id @default(cuid())
+  name           String
+  type           String       // Fixed, Percentage
+  value          Float
+  productId      String?
+  subscriptionId String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  
+  // Relationships
+  product        Product?     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  
+  @@index([productId])
+  @@index([subscriptionId])
+}
+
+model Tax {
+  id         String      @id @default(cuid())
+  name       String
+  percentage Float
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  
+  // Relationships
+  orderLines OrderLine[]
+  
+  @@index([name])
+}
+
+model QuotationTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  templateData String  // JSON string storing predefined products and pricing
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([name])
+}
