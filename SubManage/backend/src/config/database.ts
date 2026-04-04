@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import Database, { Database as DatabaseType } from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
 
@@ -6,7 +6,7 @@ import path from 'path';
 const DB_PATH = process.env.DATABASE_PATH || './database.db';
 
 // Initialize SQLite database
-const db = new Database(DB_PATH) as any;
+const db: DatabaseType = new Database(DB_PATH);
 
 // Enable foreign keys
 db.pragma('foreign_keys = ON');
