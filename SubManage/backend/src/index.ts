@@ -1,23 +1,23 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
+import db, { initializeDatabase } from './config/database';
 import { passwordService } from './services/PasswordService';
 import { AuthService } from './services/AuthService';
 
 // Load environment variables
 dotenv.config();
 
+// Initialize database schema
+initializeDatabase();
+
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Initialize Prisma Client (Prisma 7 reads config from prisma.config.ts)
-export const prisma = new PrismaClient();
-
 // Initialize and export services for use in other modules
 export { passwordService };
-export const authService = new AuthService(prisma);
+export const authService = new AuthService();
 
 // Middleware
 app.use(cors());
@@ -29,10 +29,11 @@ app.get('/health', (req, res) => {
 });
 
 // Database connection test
-app.get('/db-test', async (req, res) => {
+app.get('/db-test', (req, res) => {
   try {
-    await prisma.$connect();
-    res.json({ status: 'ok', message: 'Database connection successful' });
+    // Test database connection by running a simple query
+    const result = db.prepare('SELECT 1 as test').get();
+    res.json({ status: 'ok', message: 'Database connection successful', result });
   } catch (error) {
     res.status(500).json({ status: 'error', message: 'Database connection failed', error });
   }
@@ -44,7 +45,8 @@ app.listen(PORT, () => {
 });
 
 // Graceful shutdown
-process.on('SIGINT', async () => {
-  await prisma.$disconnect();
+process.on('SIGINT', () => {
+  db.close();
+  console.log('Database connection closed');
   process.exit(0);
 });

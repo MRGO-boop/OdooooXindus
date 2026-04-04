@@ -1,46 +1,51 @@
 # Subscription Management System - Backend
 
-Backend API for the Subscription Management System built with Express, TypeScript, and Prisma ORM with SQLite.
+Backend API for the Subscription Management System built with Express, TypeScript, and raw SQL with SQLite.
 
 ## Tech Stack
 
 - **Runtime**: Node.js
 - **Framework**: Express.js
-- **Language**: TypeScript
-- **Database**: SQLite (development)
-- **ORM**: Prisma
-- **Authentication**: JWT (to be implemented)
+- **Language**: TypeScript 5.7
+- **Database**: SQLite (better-sqlite3)
+- **Authentication**: JWT with bcrypt
+- **Testing**: Jest with ts-jest
 
 ## Project Structure
 
 ```
 backend/
-├── prisma/
-│   ├── schema.prisma       # Database schema
-│   └── migrations/         # Database migrations
+├── database/
+│   └── schema.sql          # Database schema (raw SQL)
 ├── src/
-│   ├── config/            # Configuration files
-│   │   └── database.ts    # Prisma client instance
-│   └── index.ts           # Main application entry point
-├── .env                   # Environment variables
+│   ├── config/
+│   │   └── database.ts     # Database connection and initialization
+│   ├── services/
+│   │   ├── PasswordService.ts    # Password hashing with bcrypt
+│   │   ├── AuthService.ts        # JWT authentication
+│   │   └── *.test.ts             # Unit tests
+│   ├── types/
+│   │   └── models.ts       # TypeScript interfaces for models
+│   └── index.ts            # Main application entry point
+├── .env                    # Environment variables
 ├── package.json
 └── tsconfig.json
 ```
 
 ## Database Schema
 
-The database includes the following models:
-- User (with role-based access)
-- EmailVerificationToken
-- Product & ProductVariant
-- RecurringPlan
-- Subscription
-- OrderLine
-- Invoice
-- Payment
-- Discount
-- Tax
-- QuotationTemplate
+The database includes the following tables (raw SQL):
+- users (with role-based access)
+- email_verification_tokens
+- products & product_variants
+- recurring_plans
+- subscriptions
+- order_lines
+- invoices
+- payments
+- discounts
+- taxes & order_line_taxes
+- quotation_templates
 
 ## Setup Instructions
 
@@ -50,22 +55,14 @@ The database includes the following models:
    ```
 
 2. **Environment variables**:
-   The `.env` file is already configured with SQLite connection.
+   The `.env` file is configured with SQLite database path and JWT settings.
 
-3. **Generate Prisma Client**:
-   ```bash
-   npm run prisma:generate
-   ```
-
-4. **Run migrations** (already done):
-   ```bash
-   npm run prisma:migrate
-   ```
-
-5. **Start development server**:
+3. **Start development server**:
    ```bash
    npm run dev
    ```
+
+   The database schema will be automatically initialized on first run.
 
 The server will start on `http://localhost:3000`
 
@@ -74,8 +71,8 @@ The server will start on `http://localhost:3000`
 - `npm run dev` - Start development server with hot reload
 - `npm run build` - Build for production
 - `npm start` - Start production server
-- `npm run prisma:generate` - Generate Prisma Client
-- `npm run prisma:migrate` - Run database migrations
+- `npm test` - Run all tests
+- `npm run test:watch` - Run tests in watch mode
 
 ## API Endpoints
 
@@ -83,9 +80,37 @@ The server will start on `http://localhost:3000`
 - `GET /health` - Check if server is running
 - `GET /db-test` - Test database connection
 
+## Why No ORM?
+
+This project uses raw SQL with better-sqlite3 instead of an ORM for:
+- **Full Control** - Write exactly the SQL you need
+- **Performance** - Direct database access without abstraction overhead
+- **Simplicity** - No complex ORM configuration or migrations
+- **Learning** - Better understanding of SQL and database operations
+- **Lightweight** - Fewer dependencies
+
+## Database Operations
+
+All database operations use prepared statements for SQL injection protection:
+
+```typescript
+const stmt = db.prepare('SELECT * FROM users WHERE email = ?');
+const user = stmt.get(email);
+```
+
+## Testing
+
+All services have comprehensive unit tests:
+- PasswordService: 9 tests
+- AuthService: 12 tests
+
+Run tests with: `npm test`
+
 ## Next Steps
 
 According to the implementation plan (tasks.md):
-1. ✅ Task 3.1 - Define Prisma schema
-2. ✅ Task 3.2 - Run Prisma migrations
-3. Next: Task 4 - Implement Authentication Module
+1. ✅ Task 3.1 - Define database schema (SQL)
+2. ✅ Task 3.2 - Initialize database
+3. ✅ Task 4.1 - Password hashing service
+4. ✅ Task 4.2 - JWT authentication service
+5. Next: Task 4.4 - Implement user registration

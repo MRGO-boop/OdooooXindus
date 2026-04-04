@@ -1,14 +1,15 @@
 import { AuthService } from './AuthService';
-import { PrismaClient } from '@prisma/client';
 import { passwordService } from './PasswordService';
 import jwt from 'jsonwebtoken';
+import db from '../config/database';
 
-// Mock Prisma Client
-const mockPrisma = {
-  user: {
-    findUnique: jest.fn(),
+// Mock the database
+jest.mock('../config/database', () => ({
+  __esModule: true,
+  default: {
+    prepare: jest.fn(),
   },
-} as unknown as PrismaClient;
+}));
 
 describe('AuthService', () => {
   let authService: AuthService;
@@ -16,7 +17,7 @@ describe('AuthService', () => {
   const testExpiresIn = '1h';
 
   beforeEach(() => {
-    authService = new AuthService(mockPrisma, testSecret, testExpiresIn);
+    authService = new AuthService(testSecret, testExpiresIn);
     jest.clearAllMocks();
   });
 
@@ -29,8 +30,10 @@ describe('AuthService', () => {
     };
 
     it('should successfully login with valid credentials', async () => {
-      // Mock user lookup
-      (mockPrisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+      // Mock database query
+      const mockGet = jest.fn().mockReturnValue(mockUser);
+      const mockPrepare = jest.fn().mockReturnValue({ get: mockGet });
+      (db.prepare as jest.Mock) = mockPrepare;
       
       // Mock password verification
       jest.spyOn(passwordService, 'verify').mockResolvedValue(true);
@@ -45,15 +48,8 @@ describe('AuthService', () => {
         role: 'Portal_User',
       });
       expect(typeof result.token).toBe('string');
-      expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
-        where: { email: 'test@example.com' },
-        select: {
-          id: true,
-          email: true,
-          password: true,
-          role: true,
-        },
-      });
+      expect(mockPrepare).toHaveBeenCalledWith('SELECT id, email, password, role FROM users WHERE email = ?');
+      expect(mockGet).toHaveBeenCalledWith('test@example.com');
     });
 
     it('should throw error when email is empty', async () => {
@@ -65,7 +61,9 @@ describe('AuthService', () => {
     });
 
     it('should throw error when user is not found', async () => {
-      (mockPrisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+      const mockGet = jest.fn().mockReturnValue(undefined);
+      const mockPrepare = jest.fn().mockReturnValue({ get: mockGet });
+      (db.prepare as jest.Mock) = mockPrepare;
 
       await expect(authService.login('nonexistent@example.com', 'password123')).rejects.toThrow(
         'Invalid email or password'
@@ -73,7 +71,10 @@ describe('AuthService', () => {
     });
 
     it('should throw error when password is invalid', async () => {
-      (mockPrisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+      const mockGet = jest.fn().mockReturnValue(mockUser);
+      const mockPrepare = jest.fn().mockReturnValue({ get: mockGet });
+      (db.prepare as jest.Mock) = mockPrepare;
+      
       jest.spyOn(passwordService, 'verify').mockResolvedValue(false);
 
       await expect(authService.login('test@example.com', 'wrongpassword')).rejects.toThrow(
@@ -82,20 +83,15 @@ describe('AuthService', () => {
     });
 
     it('should normalize email to lowercase', async () => {
-      (mockPrisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+      const mockGet = jest.fn().mockReturnValue(mockUser);
+      const mockPrepare = jest.fn().mockReturnValue({ get: mockGet });
+      (db.prepare as jest.Mock) = mockPrepare;
+      
       jest.spyOn(passwordService, 'verify').mockResolvedValue(true);
 
       await authService.login('TEST@EXAMPLE.COM', 'password123');
 
-      expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
-        where: { email: 'test@example.com' },
-        select: {
-          id: true,
-          email: true,
-          password: true,
-          role: true,
-        },
-      });
+      expect(mockGet).toHaveBeenCalledWith('test@example.com');
     });
   });
 
@@ -158,7 +154,10 @@ describe('AuthService', () => {
         role: 'Admin',
       };
 
-      (mockPrisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+      const mockGet = jest.fn().mockReturnValue(mockUser);
+      const mockPrepare = jest.fn().mockReturnValue({ get: mockGet });
+      (db.prepare as jest.Mock) = mockPrepare;
+      
       jest.spyOn(passwordService, 'verify').mockResolvedValue(true);
 
       // Login to get token

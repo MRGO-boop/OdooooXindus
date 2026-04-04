@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+import db from '../config/database';
 import { passwordService } from './PasswordService';
+import { User } from '../types/models';
 
 /**
  * AuthService handles JWT authentication including token generation and verification
@@ -10,12 +11,10 @@ import { passwordService } from './PasswordService';
  * - 1.3: Token verification for protected routes
  */
 export class AuthService {
-  private readonly prisma: PrismaClient;
   private readonly jwtSecret: string;
   private readonly jwtExpiresIn: string;
 
-  constructor(prisma: PrismaClient, jwtSecret?: string, jwtExpiresIn?: string) {
-    this.prisma = prisma;
+  constructor(jwtSecret?: string, jwtExpiresIn?: string) {
     this.jwtSecret = jwtSecret || process.env.JWT_SECRET || 'default-secret-key';
     this.jwtExpiresIn = jwtExpiresIn || process.env.JWT_EXPIRES_IN || '7d';
 
@@ -43,15 +42,8 @@ export class AuthService {
       }
 
       // Find user by email
-      const user = await this.prisma.user.findUnique({
-        where: { email: email.trim().toLowerCase() },
-        select: {
-          id: true,
-          email: true,
-          password: true,
-          role: true,
-        },
-      });
+      const stmt = db.prepare('SELECT id, email, password, role FROM users WHERE email = ?');
+      const user = stmt.get(email.trim().toLowerCase()) as User | undefined;
 
       if (!user) {
         throw new Error('Invalid email or password');
