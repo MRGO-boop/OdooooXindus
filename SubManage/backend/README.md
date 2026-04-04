@@ -56,7 +56,24 @@ The database includes the following tables (raw SQL):
    ```
 
 2. **Environment variables**:
-   The `.env` file is configured with SQLite database path and JWT settings.
+   The `.env` file is configured with:
+   - SQLite database path
+   - JWT settings
+   - SMTP email configuration (for password reset)
+
+   **Email Configuration**:
+   For password reset functionality, configure SMTP settings in `.env`:
+   ```env
+   SMTP_HOST=smtp.example.com
+   SMTP_PORT=587
+   SMTP_SECURE=false
+   SMTP_USER=your-email@example.com
+   SMTP_PASS=your-password
+   SMTP_FROM=noreply@submanage.com
+   FRONTEND_URL=http://localhost:5173
+   ```
+
+   For development/testing, you can use [Ethereal Email](https://ethereal.email/) for fake SMTP testing.
 
 3. **Start development server**:
    ```bash
@@ -105,6 +122,7 @@ All services have comprehensive unit tests:
 - PasswordService: 9 tests
 - AuthService: 12 tests
 - UserService: 21 tests
+- EmailVerificationService: 19 tests
 
 Run tests with: `npm test`
 
@@ -116,4 +134,5 @@ According to the implementation plan (tasks.md):
 3. ✅ Task 4.1 - Password hashing service
 4. ✅ Task 4.2 - JWT authentication service
 5. ✅ Task 4.4 - User registration service
-6. Next: Continue with remaining authentication tasks
+6. ✅ Task 4.6 - Password reset flow with email verification
+7. Next: Continue with remaining authentication tasks
