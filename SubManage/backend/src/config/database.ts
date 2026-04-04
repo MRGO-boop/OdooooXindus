@@ -6,7 +6,7 @@ import path from 'path';
 const DB_PATH = process.env.DATABASE_PATH || './database.db';
 
 // Initialize SQLite database
-const db = new Database(DB_PATH);
+const db = new Database(DB_PATH) as any;
 
 // Enable foreign keys
 db.pragma('foreign_keys = ON');
