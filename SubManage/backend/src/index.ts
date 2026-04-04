@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
+import { passwordService } from './services/PasswordService';
+import { AuthService } from './services/AuthService';
 
 // Load environment variables
 dotenv.config();
@@ -12,6 +14,10 @@ const PORT = process.env.PORT || 3000;
 
 // Initialize Prisma Client (Prisma 7 reads config from prisma.config.ts)
 export const prisma = new PrismaClient();
+
+// Initialize and export services for use in other modules
+export { passwordService };
+export const authService = new AuthService(prisma);
 
 // Middleware
 app.use(cors());

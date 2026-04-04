@@ -7,8 +7,9 @@
     // Environment Settings
     "module": "commonjs",
     "target": "es2020",
-    "types": ["node"],
+    "types": ["node", "jest"],
     "lib": ["es2020"],
+    "ignoreDeprecations": "6.0",
 
     // Other Outputs
     "sourceMap": true,
