@@ -23,6 +23,7 @@ backend/
 │   ├── services/
 │   │   ├── PasswordService.ts    # Password hashing with bcrypt
 │   │   ├── AuthService.ts        # JWT authentication
+│   │   ├── UserService.ts        # User registration and management
 │   │   └── *.test.ts             # Unit tests
 │   ├── types/
 │   │   └── models.ts       # TypeScript interfaces for models
@@ -103,6 +104,7 @@ const user = stmt.get(email);
 All services have comprehensive unit tests:
 - PasswordService: 9 tests
 - AuthService: 12 tests
+- UserService: 21 tests
 
 Run tests with: `npm test`
 
@@ -113,4 +115,5 @@ According to the implementation plan (tasks.md):
 2. ✅ Task 3.2 - Initialize database
 3. ✅ Task 4.1 - Password hashing service
 4. ✅ Task 4.2 - JWT authentication service
-5. Next: Task 4.4 - Implement user registration
+5. ✅ Task 4.4 - User registration service
+6. Next: Continue with remaining authentication tasks
